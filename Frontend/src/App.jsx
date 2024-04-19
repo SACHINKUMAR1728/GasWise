@@ -1,12 +1,13 @@
+import "./Body.jsx";
+import Body from "./Body.jsx";
+
 
 function App() {
 
   return (
-    <>
-      <h1 className="text-3xl font-bold underline text-green-50">
-      Hello world!
-    </h1>
-    </>
+    <div className='bg-black'>
+  <Body />
+    </div>
   )
 }
 
