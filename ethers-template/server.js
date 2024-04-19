@@ -2,17 +2,21 @@ const express = require('express');
 const { Network, Alchemy, Utils } = require('alchemy-sdk');
 const { ethers } = require('ethers');
 const fs = require('fs').promises;
-
+const bodyParser = require('body-parser');
 const app = express();
 const port = 3000;
+const cors = require("cors");
+const routes = require('./routes');
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Define Alchemy settings
+app.use(bodyParser.json());
+app.use(cors());
+app.use('/', routes);
 const settings = {
     apiKey: "IkpHDIoGH7Y_piYkeYMoannQqQGOLLUi",
     network: Network.ETH_SEPOLIA, // Specify the Ethereum network
 };
 
-// Initialize Alchemy instance with settings
 const alchemy = new Alchemy(settings);
 const privateKey = '1b9377eeb2c40ad78b4d2e436d27f72d630bb7f06db1ad5f5749aa5605b1c173';
 const wallet = new ethers.Wallet(privateKey, alchemy);
@@ -20,9 +24,6 @@ const signer = wallet.connect(alchemy);
 console.log('Signer address:', signer.address);
 
 
-/**
- * Function to read bytecode from a compiled contract JSON file and estimate gas cost.
-*/
 async function getCurrentGas() {
     const currentGasInHex = await alchemy.core.getGasPrice();
 
