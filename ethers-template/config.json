@@ -1,0 +1,9 @@
+{
+    "private_key": "1b9377eeb2c40ad78b4d2e436d27f72d630bb7f06db1ad5f5749aa5605b1c173",
+    "network": "goerli",
+    "ERC20": "",
+    "name": "Kanchana Coin",
+    "symbol": "SNK",
+    "total_supply": "1000000000000000000000000",
+    "decimals": 18
+  }
