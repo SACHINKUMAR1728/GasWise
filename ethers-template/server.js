@@ -7,6 +7,8 @@ const app = express();
 const port = 3000;
 const cors = require("cors");
 const routes = require('./routes');
+require('dotenv').config();
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(bodyParser.json());

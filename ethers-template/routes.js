@@ -1,11 +1,12 @@
 const { Router } = require("express");
 const { Configuration, OpenAIApi } = require("openai");
+require('dotenv').config();
 
 const router = Router();
 
 
 const config = new Configuration({
-    apikey : "sk-proj-ebGmapCrc0pD2gFDEo82T3BlbkFJAzd37j0ZbkCmuVvN8v4B"
+    apikey : process.env.apikey
 })
 const openai = new OpenAIApi(config);
 
