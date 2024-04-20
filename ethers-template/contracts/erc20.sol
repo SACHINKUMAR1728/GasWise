@@ -1,54 +1,54 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-contract News {
-    struct Reporter {
+contract VotingSystem {
+    // Structure to represent a candidate
+    struct Candidate {
         string name;
-        string email;
-        string phone;
-        uint256[] newsIds;
+        uint256 voteCount;
     }
-    
-    struct NewsItem {
-        string title;
-        string content;
-        address reporterAddress;
-    }
-    
-    mapping(address => Reporter) public reporters;
-    NewsItem[] public newsList;
-    
-    // Function to add a new reporter
-    function addReporter(string memory _name, string memory _email, string memory _phone) external {
-        require(bytes(reporters[msg.sender].name).length == 0, "Reporter already exists");
-        reporters[msg.sender] = Reporter(_name, _email, _phone, new uint256[](0));
-    }
-    
-    // Function to add news linked to a reporter
-    function addNews(string memory _title, string memory _content) external {
-        Reporter storage reporter = reporters[msg.sender];
-        require(bytes(reporter.name).length != 0, "Reporter not registered");
-        newsList.push(NewsItem(_title, _content, msg.sender));
-        reporter.newsIds.push(newsList.length - 1);
-    }
-    
-    // Function to get the list of reporters
-    function getReporters() external view returns (Reporter[] memory) {
-        Reporter[] memory result = new Reporter[](newsList.length);
-        for (uint256 i = 0; i < newsList.length; i++) {
-            address reporterAddress = newsList[i].reporterAddress;
-            result[i] = reporters[reporterAddress];
+
+    // Mapping to store candidates
+    mapping(uint256 => Candidate) public candidates;
+
+    // Mapping to track whether an address has voted
+    mapping(address => bool) public hasVoted;
+
+    // Event to log each vote
+    event Voted(address indexed voter, uint256 candidateId);
+
+    // Constructor to initialize candidates
+    constructor(string[] memory _candidateNames) {
+        for (uint256 i = 0; i < _candidateNames.length; i++) {
+            candidates[i] = Candidate({name: _candidateNames[i], voteCount: 0});
         }
-        return result;
     }
-    
-    // Function to get the list of latest news
-    function getLatestNews() external view returns (NewsItem[] memory) {
-        return newsList;
+
+    // Function to vote for a candidate
+    function vote(uint256 _candidateId) external {
+        require(!hasVoted[msg.sender], "You have already voted.");
+        require(_candidateId < getCandidateCount(), "Invalid candidate ID.");
+
+        candidates[_candidateId].voteCount++;
+        hasVoted[msg.sender] = true;
+
+        emit Voted(msg.sender, _candidateId);
     }
-    
-    // Function to get information about a specific reporter
-    function getReporterInfo(address _reporterAddress) external view returns (Reporter memory) {
-        return reporters[_reporterAddress];
+
+    // Function to get the total number of candidates
+    function getCandidateCount() public view returns (uint256) {
+        return candidates.length;
+    }
+
+    // Function to get the name and vote count of a candidate
+    function getCandidate(uint256 _candidateId)
+        public
+        view
+        returns (string memory, uint256)
+    {
+        require(_candidateId < getCandidateCount(), "Invalid candidate ID.");
+
+        Candidate memory candidate = candidates[_candidateId];
+        return (candidate.name, candidate.voteCount);
     }
 }
