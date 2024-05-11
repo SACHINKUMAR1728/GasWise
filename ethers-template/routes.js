@@ -10,6 +10,15 @@ const router = Router();
 
  // Assuming your Google API key is stored in GOOGLE_API_KEY environment variable
 
+router.post("/compile", async (req, res) => {
+    console.log(req.body);
+    const { code } = req.body;
+    const filePath = path.join(__dirname, 'contracts/erc20.sol');
+    fs.writeFileSync(filePath, code);
+    
+
+    })
+
 router.post("/prompt", async (req, res) => {
 
     

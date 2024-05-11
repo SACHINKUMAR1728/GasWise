@@ -8,48 +8,48 @@ contract NewsReportingSystem {
         string phone;
         uint[] newsIds;
     }
-    struct News {
-        string title;
-        string content;
-        address reporterAddress;
-    }
-    mapping(address => Reporter) reporters;
-    mapping(address => mapping(address => bool)) followingReporters;
-    mapping(address => bool) private isReporter;
-    News[] public newsList;
-    function isReporters(address _address) external view returns (bool) {
-        return isReporter[_address];
-    }
-    function becomeReporter(string memory _name, string memory _email, string memory _phone) external {
-        require(!isReporter[msg.sender], "!reporter");
-        isReporter[msg.sender] = true;
-        reporters[msg.sender] = Reporter(_name, _email, _phone, new uint[](0));
-    }
-    function followReporter(address _reporterAddress) external {
-        require(isReporter[_reporterAddress], "reporter !exists");
-        followingReporters[msg.sender][_reporterAddress] = true;
-    }
-    function addNews(string memory _title, string memory _content) external {
-        require(isReporter[msg.sender], "!reporter");
-        newsList.push(News(_title, _content, msg.sender));
-        reporters[msg.sender].newsIds.push(newsList.length - 1);
-    }
-    function getFollowingReporters(address _userAddress) external view returns(address[] memory) {
-        address[] memory following = new address[](0);
-        for (uint i = 0; i < newsList.length; i++) {
-            address reporterAddress = newsList[i].reporterAddress;
-            if (followingReporters[_userAddress][reporterAddress]) {
-                following = push(following, reporterAddress);
-            }
+
+    // Mapping to store candidates
+    mapping(uint256 => Candidate) public candidates;
+
+    // Mapping to track whether an address has voted
+    mapping(address => bool) public hasVoted;
+
+    // Event to log each vote
+    event Voted(address indexed voter, uint256 candidateId);
+
+    // Constructor to initialize candidates
+    constructor(string[] memory _candidateNames) {
+        for (uint256 i = 0; i < _candidateNames.length; i++) {
+            candidates[i] = Candidate({name: _candidateNames[i], voteCount: 0});
         }
-        return following;
     }
-    function push(address[] memory array, address item) internal pure returns (address[] memory) {
-        address[] memory newArray = new address[](array.length + 1);
-        for (uint i = 0; i < array.length; i++) {
-            newArray[i] = array[i];
-        }
-         newArray[array.length] = item;
-        return newArray;
+
+    // Function to vote for a candidate
+    function vote(uint256 _candidateId) external {
+        require(!hasVoted[msg.sender], "You have already voted.");
+        require(_candidateId < getCandidateCount(), "Invalid candidate ID.");
+
+        candidates[_candidateId].voteCount++;
+        hasVoted[msg.sender] = true;
+
+        emit Voted(msg.sender, _candidateId);
+    }
+
+    // Function to get the total number of candidates
+    function getCandidateCount() public view returns (uint256) {
+        return candidates.length;
+    }
+
+    // Function to get the name and vote count of a candidate
+    function getCandidate(uint256 _candidateId)
+        public
+        view
+        returns (string memory, uint256)
+    {
+        require(_candidateId < getCandidateCount(), "Invalid candidate ID.");
+
+        Candidate memory candidate = candidates[_candidateId];
+        return (candidate.name, candidate.voteCount);
     }
 }
