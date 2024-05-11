@@ -3,64 +3,46 @@ const { Network, Alchemy, Utils } = require('alchemy-sdk');
 const { ethers } = require('ethers');
 const fs = require('fs').promises;
 const bodyParser = require('body-parser');
-const app = express();
-const port = 3000;
+const axios = require('axios');
 const cors = require("cors");
 const routes = require('./routes');
 require('dotenv').config();
 
+const app = express();
+const port = 3000;
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(bodyParser.json());
 app.use(cors());
 app.use('/', routes);
-const settings = {
-  apiKey: "IkpHDIoGH7Y_piYkeYMoannQqQGOLLUi",
-  network: Network.ETH_SEPOLIA, // Specify the Ethereum network
-};
-
-const alchemy = new Alchemy(settings);
-const privateKey = '1b9377eeb2c40ad78b4d2e436d27f72d630bb7f06db1ad5f5749aa5605b1c173';
-const wallet = new ethers.Wallet(privateKey, alchemy);
-const signer = wallet.connect(alchemy);
-console.log('Signer address:', signer.address);
 
 
-async function getCurrentGas() {
-  const currentGasInHex = await alchemy.core.getGasPrice();
 
-  console.log(
-    'The current gas cost on the network is: ' +
-    Utils.formatUnits(currentGasInHex, 'gwei') +
-    ' gwei'
-  );
+
+async function getCurrentGasPrice() {
+  try {
+    const response = await axios.get('https://api.etherscan.io/api', {
+      params: {
+        module: 'gastracker',
+        action: 'gasoracle',
+        apikey: process.env.API_KEY
+      }
+    });
+
+    if (response.data && response.data.result) {
+      const currentGasPrice = response.data.result.ProposeGasPrice;
+      console.log('Current gas price (in Gwei):', currentGasPrice);
+      return currentGasPrice;
+    } else {
+      console.error('Failed to fetch current gas price:', response.data);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching current gas price:', error);
+    return null;
+  }
 }
 
-// async function estimateGasCost() {
-//     try {
-//         // Read the compiled contract JSON file
-//         const contractData = await fs.readFile('build/NewsReportingSystem.json', 'utf-8');
-//         const parsedContractData = JSON.parse(contractData);
-//         const bytecode = parsedContractData.bytecode;
-//         const opcodeCount = bytecode.match(/(?:5[1-9a-f]|6[0-6a-f])/g).length;
-//         const currentGasInHex = await alchemy.core.getGasPrice();
-//         var newprice = Utils.formatUnits(currentGasInHex, 'gwei');
-
-//         const GAS_PER_OPCODE = newprice; // Adjust this value based on your gas cost per opcode
-
-//         // Calculate the estimated gas cost based on opcode count
-//         const estimatedGasCost = GAS_PER_OPCODE * opcodeCount;
-
-//         console.log('Estimated gas cost:', estimatedGasCost);
-
-
-//         console.log('Opcode count:', opcodeCount);
-
-
-//     } catch (error) {
-//         console.log('Error estimating gas cost:', error);
-//     }
-// }
 var opcodes = {
   "0x00": 0, "0x01": 3, "0x02": 5, "0x03": 3, "0x04": 5, "0x05": 5, "0x06": 5, "0x07": 5, "0x08": 8, "0x09": 8,
   "0x0a": 10, "0x0b": 5, "0x10": 3, "0x11": 3, "0x12": 3, "0x13": 3, "0x14": 3, "0x15": 3, "0x16": 3, "0x17": 3,
@@ -83,9 +65,15 @@ var opcodes = {
 
 async function estimateGasCost() {
   try {
+    const currentGasPrice = await getCurrentGasPrice();
+    if (!currentGasPrice) {
+      console.error('Failed to fetch current gas price');
+      return;
+    }
+
     let totalGas = 0;
     let i = 0;
-    const contractData = await fs.readFile('build/NewsReportingSystem.json', 'utf-8');
+    const contractData = await fs.readFile('build/News.json', 'utf-8');
     const parsedContractData = JSON.parse(contractData);
     const bytecode = parsedContractData.bytecode;
     console.log('Bytecode:', bytecode.length);
@@ -112,10 +100,8 @@ async function estimateGasCost() {
     }
 
     console.log('total gas required for contract:', totalGas);
-    const currentGasInHex = await alchemy.core.getGasPrice();
-    var newprice = Utils.formatUnits(currentGasInHex, 'gwei');
 
-    const GAS_PER_OPCODE = newprice; // Adjust this value based on your gas cost per opcode
+    const GAS_PER_OPCODE = currentGasPrice; // Adjust this value based on your gas cost per opcode
 
     // Calculate the estimated gas cost based on opcode count
     const estimatedGasCost = GAS_PER_OPCODE * totalGas;
@@ -128,9 +114,8 @@ async function estimateGasCost() {
 
 
 
-(async () => {
+async function startserver(){
   try {
-    await getCurrentGas();
     await estimateGasCost();
 
     // Start the server after gas estimation
@@ -141,4 +126,6 @@ async function estimateGasCost() {
     console.error('Error:', error);
     process.exit(1);
   }
-})();
+};
+
+startserver();
