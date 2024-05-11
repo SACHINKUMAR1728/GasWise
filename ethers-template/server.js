@@ -39,7 +39,7 @@ async function getCurrentGas() {
 async function estimateGasCost() {
     try {
         // Read the compiled contract JSON file
-        const contractData = await fs.readFile('build/News.json', 'utf-8');
+        const contractData = await fs.readFile('build/NewsReportingSystem.json', 'utf-8');
         const parsedContractData = JSON.parse(contractData);
         const bytecode = parsedContractData.bytecode;
         const opcodeCount = bytecode.match(/(?:5[1-9a-f]|6[0-6a-f])/g).length;
