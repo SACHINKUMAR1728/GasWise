@@ -45,7 +45,7 @@ const Body = () => {
     try {
       console.log("Called the prompt");
       const response = await axios.post('http://localhost:3000/prompt', { code });
-      console.log("Received response:", response.data.text);
+      console.log("Received response");
       
       setResponse(response.data.text);
     } catch (error) {

@@ -1,75 +1,42 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.0;
 
-struct Reporter {
-    string name;
-    string email;
-    string phone;
-}
+contract GasOptimizedNewsDelivery {
 
-struct NewsItem {
-    string title;
-    string content;
-    address reporter;
-}
+    address public immutable provider;
+    address public immutable recipient;
+    uint public deliveryCount;
+    uint public immutable deliveryDelay;
+    uint public immutable compensation;
+    
+    mapping(uint => bytes32) public newsHashes;
 
-contract News {
-    mapping(address => Reporter) public reporters;
-    NewsItem[] public news;
+    event NewsDelivered(uint indexed deliveryIndex, bytes32 contentHash);
 
-    event ReporterAdded(address indexed reporterAddress, string name, string email, string phone);
-    event NewsAdded(address indexed reporter, string title, string content);
-    event ReporterDeleted(address indexed reporterAddress);
-    event NewsDeleted(uint256 indexed newsId);
-    event ReporterUpdated(address indexed reporterAddress, string name, string email, string phone);
-
-    function addReporter(string memory _name, string memory _email, string memory _phone) external {
-        require(bytes(reporters[msg.sender].name).length == 0, "Reporter exists");
-        reporters[msg.sender] = Reporter(_name, _email, _phone);
-        emit ReporterAdded(msg.sender, _name, _email, _phone);
+    constructor(address _recipient, uint _deliveryDelay, uint _compensation) {
+        provider = msg.sender;
+        recipient = _recipient;
+        deliveryDelay = _deliveryDelay;
+        compensation = _compensation;
     }
 
-    function addNews(string memory _title, string memory _content) external {
-        Reporter storage reporter = reporters[msg.sender];
-        require(bytes(reporter.name).length != 0, "Register first");
-        news.push(NewsItem(_title, _content, msg.sender));
-        emit NewsAdded(msg.sender, _title, _content);
+    function deliverNews(bytes32 _contentHash) external {
+        require(msg.sender == provider, "Only provider can deliver news");
+        require(block.timestamp >= deliveryDelay, "Delivery delay not passed");
+        
+        newsHashes[deliveryCount] = _contentHash;
+        deliveryCount++;
+        emit NewsDelivered(deliveryCount, _contentHash);
     }
 
-    function getReporters() external view returns (Reporter[] memory) {
-        Reporter[] memory result = new Reporter[](news.length);
-        for (uint256 i = 0; i < news.length; i++) {
-            result[i] = reporters[news[i].reporter];
-        }
-        return result;
+    function getNews(uint _deliveryIndex) external view returns (bytes32) {
+        require(_deliveryIndex < deliveryCount, "News not delivered yet");
+        return newsHashes[_deliveryIndex];
     }
 
-    function getLatestNews() external view returns (NewsItem[] memory) {
-        return news;
-    }
-
-    function getReporterInfo(address _reporter) external view returns (Reporter memory) {
-        return reporters[_reporter];
-    }
-
-    function deleteReporter() external {
-        delete reporters[msg.sender];
-        emit ReporterDeleted(msg.sender);
-    }
-
-    function deleteNews(uint256 _newsId) external {
-        require(_newsId < news.length, "Invalid news ID");
-        require(news[_newsId].reporter == msg.sender, "Not authorized to delete news");
-
-        delete news[_newsId];
-        emit NewsDeleted(_newsId);
-    }
-
-    function updateReporterInfo(string memory _name, string memory _email, string memory _phone) external {
-        require(bytes(reporters[msg.sender].name).length != 0, "Reporter does not exist");
-        reporters[msg.sender].name = _name;
-        reporters[msg.sender].email = _email;
-        reporters[msg.sender].phone = _phone;
-        emit ReporterUpdated(msg.sender, _name, _email, _phone);
+    function withdraw() external {
+        require(msg.sender == recipient, "Only recipient can withdraw");
+        (bool success, ) = recipient.call{value: address(this).balance}("");
+        require(success, "Withdrawal failed");
     }
 }

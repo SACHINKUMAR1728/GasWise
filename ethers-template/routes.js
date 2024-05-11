@@ -96,11 +96,13 @@ router.post("/prompt", async (req, res) => {
         const model = genAI.getGenerativeModel({ model: "gemini-pro"});
       
         const {code} = req.body;
-        let text1 = "Optimize gas fees for contract deployment by minimizing bytecode size and simplifying execution paths. Reduce unnecessary operations and variables, streamline logic, and utilize gas-efficient constructs such as storage variables and function modifiers. Aim to eliminate redundant code and optimize data structures.Use built-in Solidity functions and libraries wherever possible to reduce gas consumption.Employ compiler optimizations and test gas usage extensively to ensure functionality is preserved while achieving maximum gas savings. return only the code without telling the code language for the contract with spdx license for this contract : ";
+        let text1 = "Generate an optimized smart contract that minimizes gas costs while ensuring efficient execution on the Ethereum blockchain. Consider factors such as code complexity, storage usage, and function calls to achieve the most gas-efficient solution. The contract should maintain all necessary functionalities and security measures while prioritizing gas optimization. return only the code output with language name with spdx license :";
         let prompt = text1.concat(code);
         
         const result = await model.generateContent(prompt);
         const response = await result.response;
+
+
         const filePath = path.join(__dirname, 'contracts/erc20.sol');
         const text = response.text();
         ts.writeFileSync(filePath, text);
