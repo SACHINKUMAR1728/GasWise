@@ -87,41 +87,35 @@ const estimateGasCost = async () => {
         return null;
     }
 }
-
 router.post("/prompt", async (req, res) => {
-
-    
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro"});
-      
-        const {code} = req.body;
-        let text1 = "Generate an optimized smart contract that minimizes gas costs while ensuring efficient execution on the Ethereum blockchain. Consider factors such as code complexity, storage usage, and function calls to achieve the most gas-efficient solution. The contract should maintain all necessary functionalities and security measures while prioritizing gas optimization. return only the code output with language name with spdx license :";
-        let prompt = text1.concat(code);
-        
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+        const { code } = req.body;
+
+        const prompt = `Generate an optimized smart contract that minimizes gas costs while ensuring efficient execution on the Ethereum blockchain. 
+        Consider factors such as code complexity, storage usage, and function calls to achieve the most gas-efficient solution. 
+        The contract should maintain all necessary functionalities and security measures while prioritizing gas optimization. 
+        Return only the Solidity code with an SPDX license included:\n\n${code}`;
+
         const result = await model.generateContent(prompt);
-        const response = await result.response;
+        if (!result.response) {
+            return res.status(500).json({ error: "Invalid response from AI model" });
+        }
 
+        let text = result.response.text();
 
-        const filePath = path.join(__dirname, 'contracts/erc20.sol');
-        const text = response.text();
-        ts.writeFileSync(filePath, text);
-        res.json({text});
-          
-          
+        // Remove code block markers if present and trim anything after the last ```
+        text = text.replace(/^```solidity\s*/, "").split("```")[0].trim();
+
+        const filePath = path.join(__dirname, "contracts/erc20.sol");
+        await fs.writeFile(filePath, text, "utf-8");
+
+        res.json({ text });
     } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'An error occurred while generating text' });
-    }
-});
-
-router.get("/compile2", async (req, res) => {
-    try {
-        compile();
-        res.status(200).send('Contract compiled successfully');
-    } catch (error) {
-        console.error('Error compiling contract:', error);
-        res.status(500).json({ error: 'An error occurred while compiling the contract' });
+        console.error("Error generating optimized contract:", error);
+        res.status(500).json({ error: "An error occurred while generating the contract" });
     }
 });
 
@@ -153,5 +147,15 @@ router.get("/getestimated", async (req, res) => {
         res.status(500).json({ error: 'An error occurred while estimating gas cost' });
     }
 });
+router.get("/compile2", async (req, res) => {
+    try {
+        compile();
+        res.status(200).send('comiple2 Contract compiled successfully');
+    } catch (error) {
+        console.error('Error compiling contract:', error);
+        res.status(500).json({ error: 'An error occurred while compiling the contract' });
+    }
+});
+
 
 module.exports = router;
